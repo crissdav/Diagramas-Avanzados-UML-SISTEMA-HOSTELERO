@@ -1,0 +1,88 @@
+@startuml CU-07-ampliacion-exitosa
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Ampliación Exitosa
+' ============================================================
+' CASO DE USO: CU-07 - Gestionar ampliación de estadía
+' REQUISITOS FUNCIONALES: RF-05.1, RF-05.2, RF-05.4, RF-05.5
+' REGLAS DE NEGOCIO: RN-05, RN-11
+' ============================================================
+
+title Diagrama de Secuencia: CU-07 - Ampliación Exitosa
+
+actor "Recepcionista" as R
+participant ":InterfazAmpliacion" as IA
+participant ":ControladorAmpliacion" as CA
+participant ":ControladorHabitaciones" as CH
+participant ":ControladorPagos" as CP
+database ":BaseDatos" as BD
+
+activate R
+
+' === 1. SOLICITAR AMPLIACIÓN ===
+R -> IA: 1. solicitarAmpliacion(idEstadia, nuevosDias)
+activate IA
+
+IA -> CA: 2. procesarAmpliacion(idEstadia, nuevosDias)
+activate CA
+
+' === 2. OBTENER DATOS ACTUALES ===
+CA -> BD: 3. SELECT * FROM estadias WHERE id=idEstadia
+activate BD
+BD --> CA: 4. datosEstadia (idHabitacion, fechaSalida)
+deactivate BD
+
+' === 3. VALIDAR DISPONIBILIDAD ===
+CA -> CH: 5. verificarDisponibilidad(idHabitacion, fechaSalida, nuevosDias)
+activate CH
+CH -> BD: 6. SELECT * FROM reservas WHERE idHabitacion=... AND fecha BETWEEN...
+activate BD
+BD --> CH: 7. reservasConflictivas
+deactivate BD
+
+alt Sin conflicto
+    CH --> CA: 8. disponible
+    deactivate CH
+    
+    ' === 4. CALCULAR CARGO ADICIONAL ===
+    CA -> CP: 9. calcularCargoAdicional(idEstadia, nuevosDias)
+    activate CP
+    CP -> BD: 10. SELECT * FROM tarifas WHERE tipo=...
+    activate BD
+    BD --> CP: 11. precioPorDia
+    deactivate BD
+    CP -> CP: 12. calcularTotal()
+    CP --> CA: 13. montoAdicional
+    deactivate CP
+    note right: RF-05.4: Calcular costo adicional
+    
+    ' === 5. ACTUALIZAR FECHA DE SALIDA ===
+    CA -> BD: 14. UPDATE estadias SET fechaSalida=DATE_ADD(fechaSalida, INTERVAL nuevosDias DAY)
+    activate BD
+    BD --> CA: 15. ok
+    deactivate BD
+    note right: RF-05.5: Actualizar fecha de salida
+    
+    ' === 6. AUDITORÍA ===
+    CA -> BD: 16. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CA: 17. ok
+    deactivate BD
+    
+    CA --> IA: 18. exito(nuevaFechaSalida, montoAdicional)
+    deactivate CA
+    IA --> R: 19. mostrarConfirmacion()
+else Conflicto con reservas
+    CH -> CH: 20. sugerirReubicacion()
+    note right: RF-05.2: Sugerir habitaciones alternativas
+    CH --> CA: 21. conflicto, sugerencias
+    deactivate CH
+    
+    CA --> IA: 22. mostrarOpciones(sugerencias)
+    deactivate CA
+    IA --> R: 23. mostrarHabitacionesAlternativas()
+    note right: Flujo alternativo CU-07-conflicto-reservas
+end
+
+deactivate IA
+deactivate R
+@enduml

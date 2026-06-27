@@ -1,0 +1,89 @@
+@startuml CU-07-conflicto-reservas
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Conflicto con Reservas
+' ============================================================
+' CASO DE USO: CU-07 - Gestionar ampliación de estadía (Flujo Alternativo)
+' REQUISITOS FUNCIONALES: RF-05.2, RF-05.3
+' REGLAS DE NEGOCIO: RN-11
+' ============================================================
+
+title Diagrama de Secuencia: CU-07 - Conflicto con Reservas
+
+actor "Recepcionista" as R
+participant ":InterfazAmpliacion" as IA
+participant ":ControladorAmpliacion" as CA
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IA: 1. solicitarAmpliacion(idEstadia, nuevosDias)
+activate IA
+
+IA -> CA: 2. procesarAmpliacion(idEstadia, nuevosDias)
+activate CA
+
+CA -> BD: 3. SELECT * FROM estadias WHERE id=idEstadia
+activate BD
+BD --> CA: 4. datosEstadia
+deactivate BD
+
+CA -> CH: 5. verificarDisponibilidad(idHabitacion, fechaSalida, nuevosDias)
+activate CH
+CH -> BD: 6. SELECT * FROM reservas WHERE idHabitacion=... AND fecha BETWEEN...
+activate BD
+BD --> CH: 7. reservasConflictivas
+deactivate BD
+
+CH -> CH: 8. sugerirReubicacion()
+note right: Buscar habitaciones alternativas
+
+CH -> BD: 9. SELECT * FROM habitaciones WHERE estado='Disponible'
+activate BD
+BD --> CH: 10. habitacionesAlternativas
+deactivate BD
+
+CH --> CA: 11. conflicto, sugerencias
+deactivate CH
+
+CA --> IA: 12. mostrarOpciones(sugerencias)
+deactivate CA
+
+IA --> R: 13. mostrarHabitacionesAlternativas()
+note right: MSJ-02: "Superposición con reservas confirmadas"
+
+alt Elige reubicación
+    R -> IA: 14. seleccionarHabitacion(idNuevaHabitacion)
+    activate IA
+    IA -> CA: 15. reubicarAmpliacion(idEstadia, idNuevaHabitacion, nuevosDias)
+    activate CA
+    
+    CA -> CH: 16. reubicarHabitacion(idEstadia, idNuevaHabitacion)
+    activate CH
+    CH -> BD: 17. UPDATE estadias SET idHabitacion=idNuevaHabitacion
+    activate BD
+    BD --> CH: 18. ok
+    deactivate BD
+    CH -> BD: 19. UPDATE habitaciones SET estado='Ocupada'
+    activate BD
+    BD --> CH: 20. ok
+    deactivate BD
+    CH --> CA: 21. ok
+    deactivate CH
+    
+    CA -> BD: 22. UPDATE estadias SET fechaSalida=DATE_ADD(fechaSalida, INTERVAL nuevosDias DAY)
+    activate BD
+    BD --> CA: 23. ok
+    deactivate BD
+    
+    CA --> IA: 24. exito()
+    deactivate CA
+    IA --> R: 25. confirmarReubicacion()
+else Cancela operación
+    R -> IA: 26. cancelar()
+    IA --> R: 27. operacionCancelada()
+end
+
+deactivate IA
+deactivate R
+@enduml

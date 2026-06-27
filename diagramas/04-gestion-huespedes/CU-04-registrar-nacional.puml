@@ -1,0 +1,70 @@
+@startuml CU-04-Registrar-Huesped-Nacional
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Registrar Huésped Nacional
+' ============================================================
+' CASO DE USO: CU-04 - Gestionar huéspedes
+' REQUISITOS FUNCIONALES: RF-03, RF-03.3, RF-03.4, RF-03.5
+' REGLAS DE NEGOCIO: RN-01, RN-02, RN-03, RN-04
+' ============================================================
+
+title Diagrama de Secuencia: CU-04 - Registrar Huésped Nacional
+
+actor "Recepcionista" as R
+participant ":InterfazHuespedes" as IH
+participant ":ControladorHuespedes" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IH: 1. registrarHuesped(datos, "Nacional")
+activate IH
+
+IH -> CH: 2. guardarHuesped(datos, tipo)
+activate CH
+
+CH -> CH: 3. validarDNI(datos.dni)
+note right: Formato DNI: 8 dígitos
+
+CH -> CH: 4. validarEdad(fechaNacimiento)
+note right: RF-03.4: Mayor de 18 años
+
+alt edad >= 18
+    CH -> CH: 5. validarCamposMINCETUR(datos)
+    note right: RF-03.5: D.S.N.°005-2021-MINCETUR
+    
+    alt camposCompletos
+        CH -> BD: 6. INSERT INTO huespedes (datos...)
+        activate BD
+        BD --> CH: 7. idHuesped
+        deactivate BD
+        
+        alt menoresAcompanantes
+            CH -> CH: 8. validarMenores(menores)
+            note right: RN-04: Registro de menores
+            loop por cada menor
+                CH -> BD: 9. INSERT INTO menores (idHuesped, datos...)
+                activate BD
+                BD --> CH: 10. ok
+                deactivate BD
+            end
+        end
+        
+        CH --> IH: 11. exito(idHuesped)
+        deactivate CH
+        IH --> R: 12. confirmarRegistro()
+    else camposIncompletos
+        CH --> IH: 13. error("Campos MINCETUR incompletos")
+        deactivate CH
+        IH --> R: 14. mostrarError()
+        note right: MSJ-04: "Faltan campos obligatorios"
+    end
+else edad < 18
+    CH --> IH: 15. error("Huésped menor de edad")
+    deactivate CH
+    IH --> R: 16. mostrarError()
+    note right: MSJ-01: "Debe ser mayor de 18 años"
+end
+
+deactivate IH
+deactivate R
+@enduml

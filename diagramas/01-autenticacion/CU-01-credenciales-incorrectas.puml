@@ -1,0 +1,64 @@
+@startuml CU-01-Credenciales-Incorrectas
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Credenciales Incorrectas
+' ============================================================
+' CASO DE USO: CU-01 - Autenticarse en el sistema (Flujo Alternativo)
+' REQUISITOS FUNCIONALES: RF-01 (Iniciar sesión)
+' REGLAS DE NEGOCIO: RN-17 (Confidencialidad de la información)
+' ============================================================
+
+title Diagrama de Secuencia: CU-01 - Credenciales Incorrectas
+
+actor "Usuario" as U
+participant ":InterfazLogin" as IL
+participant ":ControladorAutenticacion" as CA
+database ":BaseDatos" as BD
+
+activate U
+
+U -> IL: 1. ingresarCredenciales(usuario, password)
+activate IL
+
+IL -> CA: 2. autenticar(usuario, password)
+activate CA
+
+CA -> BD: 3. consultarUsuario(usuario, password)
+activate BD
+BD --> CA: 4. null (usuario no encontrado)
+deactivate BD
+
+CA -> BD: 5. registrarAuditoria(usuario, "Intento fallido")
+activate BD
+BD --> CA: 6. ok
+deactivate BD
+
+CA -> CA: 7. incrementarIntentosFallidos()
+note right: Contador de intentos
+
+alt Intentos < 3
+    CA --> IL: 8. fracaso("Credenciales incorrectas")
+    deactivate CA
+    IL --> U: 9. mostrarError()
+    note right: MSJ-01: "Usuario o contraseña incorrectos"
+    
+    U -> IL: 10. reintentar()
+    activate IL
+    IL -> CA: 11. autenticar(usuario, password)
+    activate CA
+    note right: Vuelve al paso 2 del flujo normal
+    
+else Intentos >= 3
+    CA -> BD: 12. bloquearCuenta(usuario)
+    activate BD
+    BD --> CA: 13. ok
+    deactivate BD
+    
+    CA --> IL: 14. fracaso("Cuenta bloqueada")
+    deactivate CA
+    IL --> U: 15. mostrarErrorBloqueo()
+    note right: MSJ-02: "Cuenta bloqueada por seguridad"
+end
+
+deactivate IL
+deactivate U
+@enduml

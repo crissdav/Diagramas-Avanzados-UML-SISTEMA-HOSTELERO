@@ -1,0 +1,49 @@
+@startuml CU-06-Consultar-Reserva
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Consultar Reservas
+' ============================================================
+' CASO DE USO: CU-06 - Gestionar reservas
+' REQUISITOS FUNCIONALES: RF-04.5 (Consultar Reservas)
+' REGLAS DE NEGOCIO: -
+' ============================================================
+
+title Diagrama de Secuencia: CU-06 - Consultar Reservas
+
+actor "Recepcionista" as R
+participant ":InterfazReservas" as IR
+participant ":ControladorReservas" as CR
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IR: 1. consultarReservas(filtros)
+activate IR
+
+IR -> CR: 2. buscarReservas(filtros)
+activate CR
+
+CR -> BD: 3. SELECT * FROM reservas WHERE fecha BETWEEN...
+activate BD
+BD --> CR: 4. listaReservas
+deactivate BD
+
+CR -> BD: 5. SELECT * FROM huespedes WHERE id IN (listaReservas)
+activate BD
+BD --> CR: 6. datosHuespedes
+deactivate BD
+
+CR -> BD: 7. SELECT * FROM habitaciones WHERE id IN (listaReservas)
+activate BD
+BD --> CR: 8. datosHabitaciones
+deactivate BD
+
+CR -> CR: 9. combinarDatos(reservas, huespedes, habitaciones)
+
+CR --> IR: 10. reservasCompletas
+deactivate CR
+
+IR --> R: 11. mostrarResultados(reservas)
+deactivate IR
+
+deactivate R
+@enduml

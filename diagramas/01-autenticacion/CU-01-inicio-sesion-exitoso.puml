@@ -1,0 +1,45 @@
+@startuml CU-01-Inicio-Sesion-Exitoso
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Inicio de Sesión Exitoso
+' ============================================================
+' CASO DE USO: CU-01 - Autenticarse en el sistema
+' REQUISITOS FUNCIONALES: RF-01 (Iniciar sesión)
+' REGLAS DE NEGOCIO: RN-17 (Confidencialidad de la información)
+' ============================================================
+
+title Diagrama de Secuencia: CU-01 - Inicio de Sesión Exitoso
+
+actor "Usuario" as U
+participant ":InterfazLogin" as IL
+participant ":ControladorAutenticacion" as CA
+database ":BaseDatos" as BD
+
+activate U
+
+U -> IL: 1. ingresarCredenciales(usuario, password)
+activate IL
+
+IL -> CA: 2. autenticar(usuario, password)
+activate CA
+
+CA -> BD: 3. consultarUsuario(usuario, password)
+activate BD
+BD --> CA: 4. datosUsuario
+deactivate BD
+
+CA -> CA: 5. determinarRol()
+note right: Recepcionista\nAdministrador\nPersonal de Limpieza
+
+CA -> BD: 6. registrarAuditoria(usuario, "Inicio sesión")
+activate BD
+BD --> CA: 7. ok
+deactivate BD
+
+CA --> IL: 8. exito(rol, datosUsuario)
+deactivate CA
+
+IL --> U: 9. mostrarDashboard(rol)
+deactivate IL
+
+deactivate U
+@enduml

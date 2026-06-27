@@ -1,0 +1,65 @@
+@startuml CU-02-Cambiar-Estado
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Cambiar Estado a "Fuera de Servicio"
+' ============================================================
+' CASO DE USO: CU-02 - Gestionar habitaciones
+' REQUISITOS FUNCIONALES: RF-02.2 (Cambiar estado de habitación)
+' REGLAS DE NEGOCIO: RN-09, RN-10
+' ============================================================
+
+title Diagrama de Secuencia: CU-02 - Cambiar Estado a "Fuera de Servicio"
+
+actor "Administrador" as Admin
+participant ":InterfazHabitaciones" as IH
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate Admin
+
+Admin -> IH: 1. cambiarEstado(idHabitacion, "Fuera de Servicio", motivo)
+activate IH
+
+IH -> CH: 2. actualizarEstado(idHabitacion, estado, motivo)
+activate CH
+
+CH -> BD: 3. SELECT estado FROM habitaciones WHERE id=idHabitacion
+activate BD
+BD --> CH: 4. estadoActual
+deactivate BD
+
+alt estadoActual != "Ocupada"
+    CH -> BD: 5. SELECT COUNT(*) FROM reservas WHERE idHabitacion=... AND estado='Confirmada'
+    activate BD
+    BD --> CH: 6. reservasFuturas
+    deactivate BD
+    
+    alt reservasFuturas == 0
+        CH -> BD: 7. UPDATE habitaciones SET estado='Fuera de Servicio', motivo=...
+        activate BD
+        BD --> CH: 8. ok
+        deactivate BD
+        
+        CH -> BD: 9. INSERT INTO auditoria (usuario, accion, detalle)
+        activate BD
+        BD --> CH: 10. ok
+        deactivate BD
+        
+        CH --> IH: 11. exito
+        deactivate CH
+        IH --> Admin: 12. confirmarCambio()
+    else reservasFuturas > 0
+        CH --> IH: 13. error("Habitación con reservas futuras")
+        deactivate CH
+        IH --> Admin: 14. mostrarError()
+        note right: MSJ-03: "La habitación tiene reservas confirmadas"
+    end
+else estadoActual == "Ocupada"
+    CH --> IH: 15. error("Habitación ocupada")
+    deactivate CH
+    IH --> Admin: 16. mostrarError()
+    note right: MSJ-01: "No se puede cambiar, habitación ocupada"
+end
+
+deactivate IH
+deactivate Admin
+@enduml

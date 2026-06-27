@@ -1,0 +1,41 @@
+@startuml CU-02-Visualizar-Estado
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Visualizar Estado de Habitaciones
+' ============================================================
+' CASO DE USO: CU-02 - Gestionar habitaciones
+' REQUISITOS FUNCIONALES: RF-02.1 (Visualizar estado de habitaciones)
+' REGLAS DE NEGOCIO: RN-09 (Limpieza obligatoria de habitaciones)
+' ============================================================
+
+title Diagrama de Secuencia: CU-02 - Visualizar Estado de Habitaciones
+
+actor "Administrador" as Admin
+participant ":InterfazHabitaciones" as IH
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate Admin
+
+Admin -> IH: 1. visualizarEstadoHabitaciones()
+activate IH
+
+IH -> CH: 2. obtenerEstadoTodas()
+activate CH
+
+CH -> BD: 3. SELECT * FROM habitaciones
+activate BD
+BD --> CH: 4. listaHabitaciones
+deactivate BD
+
+CH -> CH: 5. mapearEstados()
+note right: Estados:\n- Disponible\n- Ocupada\n- En Limpieza\n- Reservada\n- Fuera de Servicio
+
+CH --> IH: 6. habitacionesConEstado()
+deactivate CH
+
+IH --> Admin: 7. mostrarMapaHabitaciones()
+note right: Mapa/lista con\nindicadores visuales
+
+deactivate IH
+deactivate Admin
+@enduml

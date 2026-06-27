@@ -1,0 +1,6 @@
+{
+    "plantuml.render": "plantuml.jar",
+    "plantuml.previewAutoUpdate": true,
+    "plantuml.theme": "light",
+    "plantuml.encoding": "UTF-8"
+}

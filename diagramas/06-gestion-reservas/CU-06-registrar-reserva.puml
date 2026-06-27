@@ -1,0 +1,99 @@
+@startuml CU-06-Registrar-Reserva
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Registrar Reserva
+' ============================================================
+' CASO DE USO: CU-06 - Gestionar reservas
+' REQUISITOS FUNCIONALES: RF-04.1 (Registrar Reserva)
+' REGLAS DE NEGOCIO: RN-15 (Política de cancelación)
+' ============================================================
+
+title Diagrama de Secuencia: CU-06 - Registrar Reserva
+
+actor "Recepcionista" as R
+participant ":InterfazReservas" as IR
+participant ":ControladorReservas" as CR
+participant ":ControladorHabitaciones" as CH
+participant ":ControladorHuespedes" as CHU
+database ":BaseDatos" as BD
+
+activate R
+
+' === 1. INICIAR RESERVA ===
+R -> IR: 1. nuevaReserva()
+activate IR
+
+IR -> CR: 2. iniciarReserva()
+activate CR
+
+' === 2. VERIFICAR DISPONIBILIDAD ===
+CR -> CH: 3. verificarDisponibilidad(fechaInicio, fechaFin, tipo)
+activate CH
+CH -> BD: 4. SELECT * FROM habitaciones WHERE tipo=...
+activate BD
+BD --> CH: 5. habitaciones
+deactivate BD
+CH -> BD: 6. SELECT * FROM reservas WHERE fecha BETWEEN...
+activate BD
+BD --> CH: 7. reservasConflictivas
+deactivate BD
+CH -> CH: 8. calcularDisponibles()
+CH --> CR: 9. habitacionesDisponibles
+deactivate CH
+
+alt hayDisponibilidad
+    ' === 3. BUSCAR O REGISTRAR HUÉSPED ===
+    CR -> CHU: 10. buscarHuesped(documento)
+    activate CHU
+    CHU -> BD: 11. SELECT * FROM huespedes WHERE documento=...
+    activate BD
+    BD --> CHU: 12. datosHuesped / null
+    deactivate BD
+    CHU --> CR: 13. huesped
+    deactivate CHU
+    
+    alt Huésped no existe
+        CR -> CHU: 14. registrarHuesped(datos)
+        activate CHU
+        CHU -> BD: 15. INSERT INTO huespedes...
+        activate BD
+        BD --> CHU: 16. idHuesped
+        deactivate BD
+        CHU --> CR: 17. idHuesped
+        deactivate CHU
+    end
+    
+    ' === 4. CREAR RESERVA ===
+    CR -> BD: 18. INSERT INTO reservas (idHuesped, idHabitacion, fechaInicio, fechaFin, estado='Pendiente')
+    activate BD
+    BD --> CR: 19. idReserva
+    deactivate BD
+    
+    ' === 5. CAMBIAR ESTADO DE HABITACIÓN ===
+    CR -> CH: 20. reservarHabitacion(idHabitacion)
+    activate CH
+    CH -> BD: 21. UPDATE habitaciones SET estado='Reservada'
+    activate BD
+    BD --> CH: 22. ok
+    deactivate BD
+    CH --> CR: 23. ok
+    deactivate CH
+    
+    ' === 6. AUDITORÍA ===
+    CR -> BD: 24. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CR: 25. ok
+    deactivate BD
+    
+    CR --> IR: 26. exito(idReserva)
+    deactivate CR
+    IR --> R: 27. mostrarConfirmacion()
+else noHayDisponibilidad
+    CR --> IR: 28. error("No hay disponibilidad")
+    deactivate CR
+    IR --> R: 29. mostrarError()
+    note right: MSJ-01: "No hay habitaciones disponibles"
+end
+
+deactivate IR
+deactivate R
+@enduml

@@ -1,0 +1,101 @@
+@startuml CU-05-Check-In-Completo
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Check-in Completo
+' ============================================================
+' CASO DE USO: CU-05 - Realizar check-in
+' REQUISITOS FUNCIONALES: RF-03.2, RF-04.6
+' REGLAS DE NEGOCIO: RN-01, RN-06, RN-12, RN-13, RN-14
+' ============================================================
+
+title Diagrama de Secuencia: CU-05 - Check-in Completo
+
+actor "Recepcionista" as R
+participant ":InterfazCheckIn" as ICI
+participant ":ControladorCheckIn" as CCI
+participant ":ControladorHabitaciones" as CH
+participant ":ControladorHuespedes" as CHU
+participant ":ControladorPagos" as CP
+database ":BaseDatos" as BD
+
+activate R
+
+' === 1. INICIAR CHECK-IN ===
+R -> ICI: 1. iniciarCheckIn()
+activate ICI
+
+ICI -> CCI: 2. iniciar()
+activate CCI
+
+' === 2. BUSCAR O REGISTRAR HUÉSPED ===
+CCI -> CHU: 3. buscarHuesped(documento)
+activate CHU
+CHU -> BD: 4. SELECT * FROM huespedes WHERE documento=...
+activate BD
+BD --> CHU: 5. datosHuesped / null
+deactivate BD
+CHU --> CCI: 6. huesped
+deactivate CHU
+
+alt Huésped no existe
+    CCI -> CHU: 7. registrarNuevoHuesped(datos)
+    activate CHU
+    CHU -> CHU: 8. validarEdad()
+    CHU -> CHU: 9. validarMINCETUR()
+    CHU -> BD: 10. INSERT INTO huespedes...
+    activate BD
+    BD --> CHU: 11. idHuesped
+    deactivate BD
+    CHU --> CCI: 12. idHuesped
+    deactivate CHU
+end
+
+' === 3. OBTENER HABITACIONES DISPONIBLES ===
+CCI -> CH: 13. obtenerDisponibles(tipo, capacidad)
+activate CH
+CH -> BD: 14. SELECT * FROM habitaciones WHERE estado='Disponible'
+activate BD
+BD --> CH: 15. listaHabitaciones
+deactivate BD
+CH --> CCI: 16. habitaciones
+deactivate CH
+
+' === 4. REGISTRAR ESTADÍA ===
+CCI -> BD: 17. INSERT INTO estadias (idHuesped, idHabitacion, fechaIngreso, fechaSalidaProbable, motivoViaje)
+activate BD
+BD --> CCI: 18. idEstadia
+deactivate BD
+
+' === 5. CAMBIAR ESTADO DE HABITACIÓN ===
+CCI -> CH: 19. cambiarEstado(idHabitacion, "Ocupada")
+activate CH
+CH -> BD: 20. UPDATE habitaciones SET estado='Ocupada'
+activate BD
+BD --> CH: 21. ok
+deactivate BD
+CH --> CCI: 22. actualizado
+deactivate CH
+
+' === 6. REGISTRAR PAGO ===
+CCI -> CP: 23. registrarPago(idEstadia, monto, metodo)
+activate CP
+CP -> BD: 24. INSERT INTO pagos (idEstadia, monto, metodo, fecha)
+activate BD
+BD --> CP: 25. idPago
+deactivate BD
+CP --> CCI: 26. exito
+deactivate CP
+
+' === 7. AUDITORÍA ===
+CCI -> BD: 27. INSERT INTO auditoria (usuario, accion, detalle)
+activate BD
+BD --> CCI: 28. ok
+deactivate BD
+
+CCI --> ICI: 29. exito(idEstadia, idHuesped)
+deactivate CCI
+
+ICI --> R: 30. mostrarConfirmacion()
+deactivate ICI
+
+deactivate R
+@enduml

@@ -1,0 +1,92 @@
+@startuml CU-10-Finalizar-Limpieza
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Finalizar Limpieza
+' ============================================================
+' CASO DE USO: CU-10 - Gestionar limpieza de habitaciones
+' REQUISITOS FUNCIONALES: RF-07.2, RF-07.3, RF-07.5
+' REGLAS DE NEGOCIO: RN-09
+' ============================================================
+
+title Diagrama de Secuencia: CU-10 - Finalizar Limpieza
+
+actor "PersonalLimpieza" as PL
+participant ":InterfazLimpieza" as IL
+participant ":ControladorLimpieza" as CL
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate PL
+
+' === 1. VER HABITACIONES PENDIENTES ===
+PL -> IL: 1. verHabitacionesPendientes()
+activate IL
+
+IL -> CL: 2. obtenerPendientes()
+activate CL
+
+CL -> BD: 3. SELECT * FROM tareasLimpieza WHERE estado='Pendiente'
+activate BD
+BD --> CL: 4. listaTareas
+deactivate BD
+
+CL --> IL: 5. tareasPendientes
+deactivate CL
+
+IL --> PL: 6. mostrarLista()
+deactivate IL
+
+' === 2. INICIAR LIMPIEZA ===
+PL -> IL: 7. iniciarLimpieza(idHabitacion)
+activate IL
+
+IL -> CL: 8. iniciarTarea(idHabitacion)
+activate CL
+
+CL -> BD: 9. UPDATE tareasLimpieza SET estado='EnProgreso', fechaInicio=NOW()
+activate BD
+BD --> CL: 10. ok
+deactivate BD
+
+CL --> IL: 11. exito
+deactivate CL
+
+IL --> PL: 12. confirmarInicio()
+deactivate IL
+
+' === 3. FINALIZAR LIMPIEZA ===
+PL -> IL: 13. finalizarLimpieza(idHabitacion)
+activate IL
+
+IL -> CL: 14. completarTarea(idHabitacion)
+activate CL
+
+' === 4. ACTUALIZAR ESTADO HABITACIÓN ===
+CL -> CH: 15. cambiarEstado(idHabitacion, "Disponible")
+activate CH
+CH -> BD: 16. UPDATE habitaciones SET estado='Disponible'
+activate BD
+BD --> CH: 17. ok
+deactivate BD
+CH --> CL: 18. ok
+deactivate CH
+note right: RF-07.3: Marcar como disponible
+
+' === 5. REGISTRAR COMPLETADO ===
+CL -> BD: 19. UPDATE tareasLimpieza SET estado='Completado', fechaFin=NOW()
+activate BD
+BD --> CL: 20. ok
+deactivate BD
+
+CL -> BD: 21. INSERT INTO auditoria (usuario, accion, detalle)
+activate BD
+BD --> CL: 22. ok
+deactivate BD
+
+CL --> IL: 23. exito
+deactivate CL
+
+IL --> PL: 24. confirmarFinalizacion()
+deactivate IL
+
+deactivate PL
+@enduml

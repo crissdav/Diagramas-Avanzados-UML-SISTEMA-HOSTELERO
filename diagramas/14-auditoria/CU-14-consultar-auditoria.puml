@@ -1,0 +1,56 @@
+@startuml CU-14-consultar-auditoria
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Consultar Auditoría
+' ============================================================
+' CASO DE USO: CU-14 - Consultar auditoría del sistema
+' REQUISITOS FUNCIONALES: RF-01.2
+' REGLAS DE NEGOCIO: RN-17
+' ============================================================
+
+title Diagrama de Secuencia: CU-14 - Consultar Auditoría
+
+actor "Administrador" as Admin
+participant ":InterfazAuditoria" as IA
+participant ":ControladorAuditoria" as CA
+database ":BaseDatos" as BD
+
+activate Admin
+
+Admin -> IA: 1. consultarAuditoria(filtros)
+activate IA
+
+IA -> CA: 2. buscarRegistros(filtros)
+activate CA
+
+CA -> BD: 3. SELECT * FROM auditoria WHERE fecha BETWEEN...
+activate BD
+BD --> CA: 4. listaAuditoria
+deactivate BD
+
+CA -> BD: 5. SELECT * FROM usuarios WHERE id IN (listaAuditoria)
+activate BD
+BD --> CA: 6. datosUsuarios
+deactivate BD
+
+CA -> CA: 7. combinarDatos()
+note right: - Usuario\n- Fecha\n- Hora\n- Acción\n- Detalles
+
+CA --> IA: 8. auditoriaCompleta
+deactivate CA
+
+IA --> Admin: 9. mostrarResultados()
+note right: Registros filtrados\ncon todos los detalles
+
+Admin -> IA: 10. exportarAuditoria(formato)
+activate IA
+
+IA -> CA: 11. exportar(formato, auditoria)
+activate CA
+CA --> IA: 12. archivoExportado
+deactivate CA
+
+IA --> Admin: 13. descargarArchivo()
+deactivate IA
+
+deactivate Admin
+@enduml

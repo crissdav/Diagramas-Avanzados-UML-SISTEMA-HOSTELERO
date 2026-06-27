@@ -1,0 +1,56 @@
+@startuml CU-03-Buscar-Disponibilidad
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Buscar Disponibilidad
+' ============================================================
+' CASO DE USO: CU-03 - Consultar disponibilidad de habitaciones
+' REQUISITOS FUNCIONALES: RF-02 (Buscar Disponibilidad), RF-07.5
+' REGLAS DE NEGOCIO: -
+' ============================================================
+
+title Diagrama de Secuencia: CU-03 - Buscar Disponibilidad
+
+actor "Recepcionista" as R
+participant ":InterfazBusqueda" as IB
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IB: 1. buscarDisponibilidad(filtros)
+activate IB
+
+IB -> CH: 2. consultarDisponibles(tipo, capacidad, fechaInicio, fechaFin)
+activate CH
+
+CH -> BD: 3. obtenerHabitacionesPorTipo(tipo, capacidad)
+activate BD
+BD --> CH: 4. habitaciones
+deactivate BD
+
+CH -> BD: 5. verificarReservasFuturas(listaHabitaciones, fechaInicio, fechaFin)
+activate BD
+BD --> CH: 6. habitacionesReservadas
+deactivate BD
+
+CH -> BD: 7. verificarEstadiasActivas(listaHabitaciones, fechaInicio, fechaFin)
+activate BD
+BD --> CH: 8. habitacionesOcupadas
+deactivate BD
+
+CH -> CH: 9. calcularDisponibilidad()
+note right: Filtra habitaciones\nsegún disponibilidad
+
+alt hayDisponibilidad
+    CH --> IB: 10. listaHabitaciones()
+    deactivate CH
+    IB --> R: 11. mostrarResultados()
+else noHayDisponibilidad
+    CH --> IB: 12. sinResultados()
+    deactivate CH
+    IB --> R: 13. mostrarMensaje()
+    note right: MSJ-01: "No se encontraron habitaciones"
+end
+
+deactivate IB
+deactivate R
+@enduml

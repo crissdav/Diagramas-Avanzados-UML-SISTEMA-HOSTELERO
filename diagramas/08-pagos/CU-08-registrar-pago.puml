@@ -1,0 +1,76 @@
+@startuml CU
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Registrar Pago
+' ============================================================
+' CASO DE USO: CU-08 - Gestionar pagos
+' REQUISITOS FUNCIONALES: RF-06.5, RF-06.6
+' REGLAS DE NEGOCIO: RN-06, RN-07
+' ============================================================
+
+title Diagrama de Secuencia: CU-08 - Registrar Pago
+
+actor "Recepcionista" as R
+participant ":InterfazPagos" as IP
+participant ":ControladorPagos" as CP
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IP: 1. registrarPago(idEstadia, monto, metodoPago)
+activate IP
+
+IP -> CP: 2. procesarPago(idEstadia, monto, metodo)
+activate CP
+
+CP -> BD: 3. SELECT * FROM estadias WHERE id=idEstadia AND estado='Activa'
+activate BD
+BD --> CP: 4. datosEstadia
+deactivate BD
+
+alt Estadía existe
+    ' === VALIDAR MONTO ===
+    CP -> CP: 5. validarMonto(monto)
+    note right: RF-06.6: Monto > 0
+    
+    alt montoValido
+        ' === REGISTRAR PAGO ===
+        CP -> BD: 6. INSERT INTO pagos (idEstadia, monto, metodo, fecha, usuario)
+        activate BD
+        BD --> CP: 7. idPago
+        deactivate BD
+        
+        ' === ACTUALIZAR TOTAL PAGADO ===
+        CP -> BD: 8. UPDATE estadias SET totalPagado=totalPagado+monto
+        activate BD
+        BD --> CP: 9. ok
+        deactivate BD
+        
+        ' === AUDITORÍA ===
+        CP -> BD: 10. INSERT INTO auditoria (usuario, accion, detalle)
+        activate BD
+        BD --> CP: 11. ok
+        deactivate BD
+        
+        ' === VERIFICAR SALDO ===
+        CP -> CP: 12. verificarSaldo()
+        note right: Calcular saldo pendiente
+        
+        CP --> IP: 13. exito(idPago, saldoPendiente)
+        deactivate CP
+        IP --> R: 14. mostrarConfirmacion()
+        note right: Saldo actualizado
+    else montoInvalido
+        CP --> IP: 15. error("Monto inválido")
+        deactivate CP
+        IP --> R: 16. mostrarError()
+        note right: MSJ-02: "Monto debe ser mayor a 0"
+    end
+else Estadía no existe
+    CP --> IP: 17. error("Estadía no encontrada")
+    deactivate CP
+    IP --> R: 18. mostrarError()
+end
+
+deactivate IP
+deactivate R
+@enduml

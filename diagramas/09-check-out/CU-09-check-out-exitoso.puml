@@ -1,0 +1,101 @@
+@startuml CU-09-check-out-exitoso
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Check-out Exitoso
+' ============================================================
+' CASO DE USO: CU-09 - Realizar check-out
+' REQUISITOS FUNCIONALES: RF-06.1, RF-06.7, RF-06.8, RF-07.1, RF-07.2
+' REGLAS DE NEGOCIO: RN-09
+' ============================================================
+
+title Diagrama de Secuencia: CU-09 - Check-out Exitoso
+
+actor "Recepcionista" as R
+participant ":InterfazCheckOut" as ICO
+participant ":ControladorCheckOut" as CCO
+participant ":ControladorPagos" as CP
+participant ":ControladorHabitaciones" as CH
+participant ":ControladorLimpieza" as CL
+database ":BaseDatos" as BD
+
+activate R
+
+' === 1. INICIAR CHECK-OUT ===
+R -> ICO: 1. solicitarCheckOut(idEstadia)
+activate ICO
+
+ICO -> CCO: 2. iniciarCheckOut(idEstadia)
+activate CCO
+
+' === 2. OBTENER DATOS ===
+CCO -> BD: 3. SELECT * FROM estadias WHERE id=idEstadia
+activate BD
+BD --> CCO: 4. datosEstadia
+deactivate BD
+
+CCO -> BD: 5. SELECT * FROM huespedes WHERE id=idHuesped
+activate BD
+BD --> CCO: 6. datosHuesped
+deactivate BD
+
+' === 3. CALCULAR TOTAL ===
+CCO -> CP: 7. calcularTotal(idEstadia)
+activate CP
+CP -> BD: 8. SELECT * FROM pagos WHERE idEstadia=idEstadia
+activate BD
+BD --> CP: 9. pagosRealizados
+deactivate BD
+CP -> CP: 10. calcularTotalPagar()
+CP --> CCO: 11. total, pagos, saldo
+deactivate CP
+
+' === 4. VALIDAR SALDO ===
+alt saldo == 0
+    ' === 5. REGISTRAR CHECK-OUT ===
+    CCO -> BD: 12. UPDATE estadias SET fechaSalida=NOW(), estado='Finalizado'
+    activate BD
+    BD --> CCO: 13. ok
+    deactivate BD
+    note right: RF-06.8: Registrar salida definitiva
+    
+    ' === 6. CAMBIAR ESTADO DE HABITACIÓN ===
+    CCO -> CH: 14. cambiarEstadoHabitacion(idHabitacion, "En Limpieza")
+    activate CH
+    CH -> BD: 15. UPDATE habitaciones SET estado='En Limpieza'
+    activate BD
+    BD --> CH: 16. ok
+    deactivate BD
+    CH --> CCO: 17. ok
+    deactivate CH
+    note right: RF-07.1: Actualizar a "En Limpieza"
+    
+    ' === 7. NOTIFICAR LIMPIEZA ===
+    CCO -> CL: 18. notificarLimpieza(idHabitacion)
+    activate CL
+    CL -> BD: 19. INSERT INTO tareasLimpieza (idHabitacion, fecha, estado='Pendiente')
+    activate BD
+    BD --> CL: 20. ok
+    deactivate BD
+    CL --> CCO: 21. notificado
+    deactivate CL
+    note right: RF-07.2: Informar al personal de limpieza
+    
+    ' === 8. AUDITORÍA ===
+    CCO -> BD: 22. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CCO: 23. ok
+    deactivate BD
+    
+    CCO --> ICO: 24. exito(datosCheckOut)
+    deactivate CCO
+    ICO --> R: 25. mostrarComprobante()
+else saldo > 0
+    CCO --> ICO: 26. error("Saldo pendiente")
+    deactivate CCO
+    ICO --> R: 27. mostrarError()
+    note right: MSJ-01: "Saldo pendiente"
+    note right: Flujo alternativo CU-09-saldo-pendiente
+end
+
+deactivate ICO
+deactivate R
+@enduml

@@ -1,0 +1,59 @@
+@startuml CU-02-Gestionar-Tarifas
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Gestionar Tarifas y Precios
+' ============================================================
+' CASO DE USO: CU-02 - Gestionar habitaciones
+' REQUISITOS FUNCIONALES: RF-02.3 (Gestionar tarifas y precios)
+' REGLAS DE NEGOCIO: - 
+' ============================================================
+
+title Diagrama de Secuencia: CU-02 - Gestionar Tarifas y Precios
+
+actor "Administrador" as Admin
+participant ":InterfazTarifas" as IT
+participant ":ControladorTarifas" as CT
+database ":BaseDatos" as BD
+
+activate Admin
+
+Admin -> IT: 1. gestionarTarifas()
+activate IT
+
+IT -> CT: 2. obtenerTarifasActuales()
+activate CT
+
+CT -> BD: 3. SELECT * FROM tarifas
+activate BD
+BD --> CT: 4. listaTarifas
+deactivate BD
+
+CT --> IT: 5. tarifas
+deactivate CT
+
+IT --> Admin: 6. mostrarFormularioTarifas()
+deactivate IT
+
+Admin -> IT: 7. actualizarTarifa(tipoHabitacion, precio, temporada, diaSemana)
+activate IT
+
+IT -> CT: 8. guardarTarifa(tipo, precio, temporada, dia)
+activate CT
+
+CT -> BD: 9. UPDATE tarifas SET precio=... WHERE tipo=... AND temporada=...
+activate BD
+BD --> CT: 10. ok
+deactivate BD
+
+CT -> BD: 11. INSERT INTO auditoria (usuario, accion, detalle)
+activate BD
+BD --> CT: 12. ok
+deactivate BD
+
+CT --> IT: 13. exito
+deactivate CT
+
+IT --> Admin: 14. confirmarActualizacion()
+deactivate IT
+
+deactivate Admin
+@enduml

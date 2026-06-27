@@ -1,0 +1,52 @@
+@startuml CU-06-Confirmar-Reserva
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Confirmar Reserva
+' ============================================================
+' CASO DE USO: CU-06 - Gestionar reservas
+' REQUISITOS FUNCIONALES: RF-04.2 (Confirmar Reserva)
+' REGLAS DE NEGOCIO: RN-10 (Confirmación obligatoria)
+' ============================================================
+
+title Diagrama de Secuencia: CU-06 - Confirmar Reserva
+
+actor "Recepcionista" as R
+participant ":InterfazReservas" as IR
+participant ":ControladorReservas" as CR
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IR: 1. confirmarReserva(idReserva)
+activate IR
+
+IR -> CR: 2. cambiarEstadoReserva(idReserva, "Confirmada")
+activate CR
+
+CR -> BD: 3. SELECT * FROM reservas WHERE id=idReserva
+activate BD
+BD --> CR: 4. datosReserva
+deactivate BD
+
+alt estadoActual == "Pendiente" or estadoActual == "Confirmada"
+    CR -> BD: 5. UPDATE reservas SET estado='Confirmada'
+    activate BD
+    BD --> CR: 6. ok
+    deactivate BD
+    
+    CR -> BD: 7. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CR: 8. ok
+    deactivate BD
+    
+    CR --> IR: 9. exito
+    deactivate CR
+    IR --> R: 10. mostrarConfirmacion()
+else estadoActual == "Cancelada"
+    CR --> IR: 11. error("No se puede confirmar reserva cancelada")
+    deactivate CR
+    IR --> R: 12. mostrarError()
+end
+
+deactivate IR
+deactivate R
+@enduml

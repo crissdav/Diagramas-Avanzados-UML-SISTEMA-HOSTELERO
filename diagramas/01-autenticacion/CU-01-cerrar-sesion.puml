@@ -1,0 +1,41 @@
+@startuml CU-01-Cerrar-Sesion
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Cerrar Sesión
+' ============================================================
+' CASO DE USO: CU-01 - Autenticarse en el sistema
+' REQUISITOS FUNCIONALES: RF-01.1 (Cerrar sesión)
+' REGLAS DE NEGOCIO: RN-17 (Confidencialidad de la información)
+' ============================================================
+
+title Diagrama de Secuencia: CU-01.1 - Cerrar Sesión
+
+actor "Usuario" as U
+participant ":InterfazDashboard" as ID
+participant ":ControladorAutenticacion" as CA
+database ":BaseDatos" as BD
+
+activate U
+
+U -> ID: 1. seleccionarCerrarSesion()
+activate ID
+
+ID -> CA: 2. cerrarSesion(usuario)
+activate CA
+
+CA -> BD: 3. registrarAuditoria(usuario, "Cierre sesión")
+activate BD
+BD --> CA: 4. ok
+deactivate BD
+
+CA -> CA: 5. invalidarSesion()
+note right: Eliminar token de sesión
+
+CA --> ID: 6. exito()
+deactivate CA
+
+ID -> ID: 7. limpiarDatosSesion()
+ID --> U: 8. mostrarPantallaLogin()
+deactivate ID
+
+deactivate U
+@enduml

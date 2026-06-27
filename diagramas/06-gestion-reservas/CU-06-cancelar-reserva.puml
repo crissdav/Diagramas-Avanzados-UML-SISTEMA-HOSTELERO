@@ -1,0 +1,68 @@
+@startuml CU-06-Cancelar-Reserva
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Cancelar Reserva
+' ============================================================
+' CASO DE USO: CU-06 - Gestionar reservas
+' REQUISITOS FUNCIONALES: RF-04.4 (Cancelar Reserva)
+' REGLAS DE NEGOCIO: RN-15 (Política de cancelación)
+' ============================================================
+
+title Diagrama de Secuencia: CU-06 - Cancelar Reserva
+
+actor "Recepcionista" as R
+participant ":InterfazReservas" as IR
+participant ":ControladorReservas" as CR
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IR: 1. cancelarReserva(idReserva, motivo)
+activate IR
+
+IR -> CR: 2. procesarCancelacion(idReserva, motivo)
+activate CR
+
+CR -> BD: 3. SELECT * FROM reservas WHERE id=idReserva
+activate BD
+BD --> CR: 4. datosReserva (fechaInicio)
+deactivate BD
+
+' Validar anticipación mínima (24 horas)
+CR -> CR: 5. validarAnticipacion(fechaInicio)
+note right: Verificar política de cancelación
+
+alt Anticipación válida
+    CR -> BD: 6. UPDATE reservas SET estado='Cancelada', motivo=...
+    activate BD
+    BD --> CR: 7. ok
+    deactivate BD
+    
+    ' Liberar habitación
+    CR -> CH: 8. liberarHabitacion(idHabitacion)
+    activate CH
+    CH -> BD: 9. UPDATE habitaciones SET estado='Disponible'
+    activate BD
+    BD --> CH: 10. ok
+    deactivate BD
+    CH --> CR: 11. ok
+    deactivate CH
+    
+    CR -> BD: 12. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CR: 13. ok
+    deactivate BD
+    
+    CR --> IR: 14. exito
+    deactivate CR
+    IR --> R: 15. mostrarConfirmacion()
+else Anticipación insuficiente
+    CR --> IR: 16. error("Anticipación mínima no cumplida")
+    deactivate CR
+    IR --> R: 17. mostrarError()
+    note right: MSJ-02: "No cumple anticipación mínima"
+end
+
+deactivate IR
+deactivate R
+@enduml

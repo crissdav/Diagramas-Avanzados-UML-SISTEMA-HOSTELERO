@@ -1,0 +1,65 @@
+@startuml CU-06-Modificar-Reserva
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Modificar Reserva
+' ============================================================
+' CASO DE USO: CU-06 - Gestionar reservas
+' REQUISITOS FUNCIONALES: RF-04.3 (Modificar Reserva)
+' REGLAS DE NEGOCIO: -
+' ============================================================
+
+title Diagrama de Secuencia: CU-06 - Modificar Reserva
+
+actor "Recepcionista" as R
+participant ":InterfazReservas" as IR
+participant ":ControladorReservas" as CR
+participant ":ControladorHabitaciones" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IR: 1. modificarReserva(idReserva, nuevosDatos)
+activate IR
+
+IR -> CR: 2. actualizarReserva(idReserva, nuevosDatos)
+activate CR
+
+CR -> BD: 3. SELECT * FROM reservas WHERE id=idReserva
+activate BD
+BD --> CR: 4. datosReserva
+deactivate BD
+
+alt fechaCambia
+    CR -> CH: 5. verificarDisponibilidad(nuevaFechaInicio, nuevaFechaFin, tipo)
+    activate CH
+    CH -> BD: 6. verificarDisponibilidad()
+    activate BD
+    BD --> CH: 7. disponible
+    deactivate BD
+    CH --> CR: 8. disponibilidad
+    deactivate CH
+end
+
+alt disponibilidad OK
+    CR -> BD: 9. UPDATE reservas SET fechas, tipo, datos...
+    activate BD
+    BD --> CR: 10. ok
+    deactivate BD
+    
+    CR -> BD: 11. INSERT INTO auditoria (usuario, accion, detalle)
+    activate BD
+    BD --> CR: 12. ok
+    deactivate BD
+    
+    CR --> IR: 13. exito
+    deactivate CR
+    IR --> R: 14. mostrarConfirmacion()
+else noDisponibilidad
+    CR --> IR: 15. error("No hay disponibilidad")
+    deactivate CR
+    IR --> R: 16. mostrarError()
+    note right: MSJ-01: "No hay habitaciones disponibles"
+end
+
+deactivate IR
+deactivate R
+@enduml

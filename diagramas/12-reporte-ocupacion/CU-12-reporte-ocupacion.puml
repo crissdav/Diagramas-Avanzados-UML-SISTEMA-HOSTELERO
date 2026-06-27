@@ -1,0 +1,66 @@
+@startuml CU-12-reporte-ocupacion
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Generar Reporte de Ocupación
+' ============================================================
+' CASO DE USO: CU-12 - Generar reportes de ocupación
+' REQUISITOS FUNCIONALES: RF-08
+' REGLAS DE NEGOCIO: -
+' ============================================================
+
+title Diagrama de Secuencia: CU-12 - Generar Reporte de Ocupación
+
+actor "Administrador" as Admin
+participant ":InterfazReportes" as IR
+participant ":ControladorReportes" as CR
+database ":BaseDatos" as BD
+
+activate Admin
+
+Admin -> IR: 1. generarReporteOcupacion(periodo, fechas, filtros)
+activate IR
+
+IR -> CR: 2. procesarReporteOcupacion(periodo, fechas, filtros)
+activate CR
+
+CR -> BD: 3. SELECT COUNT(*) FROM habitaciones
+activate BD
+BD --> CR: 4. totalHabitaciones
+deactivate BD
+
+CR -> BD: 5. SELECT COUNT(*) FROM estadias WHERE fecha BETWEEN...
+activate BD
+BD --> CR: 6. habitacionesOcupadas
+deactivate BD
+
+CR -> BD: 7. SELECT AVG(DATEDIFF(fechaSalida, fechaIngreso)) FROM estadias WHERE fecha BETWEEN...
+activate BD
+BD --> CR: 8. promedioEstadia
+deactivate BD
+
+CR -> BD: 9. SELECT tipo, COUNT(*) FROM estadias GROUP BY tipo
+activate BD
+BD --> CR: 10. ocupacionPorTipo
+deactivate BD
+
+CR -> CR: 11. calcularMetricas()
+note right: - Porcentaje de ocupación\n- Promedio de estadía\n- Desglose por tipo
+
+CR --> IR: 12. reporteGenerado
+deactivate CR
+
+IR --> Admin: 13. mostrarReporte()
+note right: Gráficos y tablas\ncon datos de ocupación
+
+Admin -> IR: 14. exportarReporte(formato)
+activate IR
+
+IR -> CR: 15. exportar(formato, reporte)
+activate CR
+CR --> IR: 16. archivoExportado
+deactivate CR
+
+IR --> Admin: 17. descargarArchivo()
+deactivate IR
+
+deactivate Admin
+@enduml

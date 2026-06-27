@@ -1,0 +1,66 @@
+@startuml CU-04-Registrar-Huesped-Extranjero
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Registrar Huésped Extranjero
+' ============================================================
+' CASO DE USO: CU-04 - Gestionar huéspedes
+' REQUISITOS FUNCIONALES: RF-03.1, RF-03.4, RF-03.5
+' REGLAS DE NEGOCIO: RN-02, RN-16
+' ============================================================
+
+title Diagrama de Secuencia: CU-04 - Registrar Huésped Extranjero
+
+actor "Recepcionista" as R
+participant ":InterfazHuespedes" as IH
+participant ":ControladorHuespedes" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IH: 1. registrarHuesped(datos, "Extranjero")
+activate IH
+
+IH -> CH: 2. guardarHuesped(datos, tipo)
+activate CH
+
+CH -> CH: 3. validarPasaporte(datos.pasaporte)
+note right: RF-03.1: Validar pasaporte\n- Número\n- País de origen\n- Fecha de expiración
+
+alt pasaporteValido
+    CH -> CH: 4. validarEdad(fechaNacimiento)
+    note right: RF-03.4: Mayor de 18 años
+    
+    alt edad >= 18
+        CH -> CH: 5. validarCamposMINCETUR(datos)
+        note right: RF-03.5: D.S.N.°005-2021-MINCETUR
+        
+        alt camposCompletos
+            CH -> BD: 6. INSERT INTO huespedes (datos...)
+            activate BD
+            BD --> CH: 7. idHuesped
+            deactivate BD
+            
+            CH --> IH: 8. exito(idHuesped)
+            deactivate CH
+            IH --> R: 9. confirmarRegistro()
+        else camposIncompletos
+            CH --> IH: 10. error("Campos MINCETUR incompletos")
+            deactivate CH
+            IH --> R: 11. mostrarError()
+            note right: MSJ-04: "Faltan campos obligatorios"
+        end
+    else edad < 18
+        CH --> IH: 12. error("Huésped menor de edad")
+        deactivate CH
+        IH --> R: 13. mostrarError()
+        note right: MSJ-01: "Debe ser mayor de 18 años"
+    end
+else pasaporteInvalido
+    CH --> IH: 14. error("Pasaporte inválido")
+    deactivate CH
+    IH --> R: 15. mostrarError()
+    note right: MSJ-06: "Pasaporte no válido"
+end
+
+deactivate IH
+deactivate R
+@enduml

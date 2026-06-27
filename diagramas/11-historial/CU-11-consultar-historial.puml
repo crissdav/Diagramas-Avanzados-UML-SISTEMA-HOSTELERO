@@ -1,0 +1,55 @@
+@startuml CU-11-consultar-historial
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Consultar Historial de Estadías
+' ============================================================
+' CASO DE USO: CU-11 - Consultar historial de estadías
+' REQUISITOS FUNCIONALES: RF-07.4
+' REGLAS DE NEGOCIO: RN-17
+' ============================================================
+
+title Diagrama de Secuencia: CU-11 - Consultar Historial de Estadías
+
+actor "Recepcionista" as R
+participant ":InterfazHistorial" as IH
+participant ":ControladorHistorial" as CH
+database ":BaseDatos" as BD
+
+activate R
+
+R -> IH: 1. consultarHistorial(filtros)
+activate IH
+
+IH -> CH: 2. buscarEstadias(filtros)
+activate CH
+
+CH -> BD: 3. SELECT * FROM estadias WHERE estado='Finalizado' AND fecha BETWEEN...
+activate BD
+BD --> CH: 4. listaEstadias
+deactivate BD
+
+CH -> BD: 5. SELECT * FROM huespedes WHERE id IN (listaEstadias)
+activate BD
+BD --> CH: 6. datosHuespedes
+deactivate BD
+
+CH -> BD: 7. SELECT * FROM habitaciones WHERE id IN (listaEstadias)
+activate BD
+BD --> CH: 8. datosHabitaciones
+deactivate BD
+
+CH -> BD: 9. SELECT * FROM pagos WHERE idEstadia IN (listaEstadias)
+activate BD
+BD --> CH: 10. datosPagos
+deactivate BD
+
+CH -> CH: 11. combinarDatos()
+
+CH --> IH: 12. historialCompleto
+deactivate CH
+
+IH --> R: 13. mostrarResultados()
+note right: - Huésped\n- Habitación\n- Fechas\n- Monto total\n- Método de pago
+
+deactivate IH
+deactivate R
+@enduml

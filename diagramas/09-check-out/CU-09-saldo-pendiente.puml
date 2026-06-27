@@ -1,0 +1,79 @@
+@startuml CU-09-saldo-pendiente
+' ============================================================
+' DIAGRAMA DE SECUENCIA: Saldo Pendiente
+' ============================================================
+' CASO DE USO: CU-09 - Realizar check-out (Flujo Alternativo)
+' REQUISITOS FUNCIONALES: RF-06.7
+' REGLAS DE NEGOCIO: -
+' ============================================================
+
+title Diagrama de Secuencia: CU-09 - Saldo Pendiente
+
+actor "Recepcionista" as R
+participant ":InterfazCheckOut" as ICO
+participant ":ControladorCheckOut" as CCO
+participant ":ControladorPagos" as CP
+database ":BaseDatos" as BD
+
+activate R
+
+R -> ICO: 1. solicitarCheckOut(idEstadia)
+activate ICO
+
+ICO -> CCO: 2. iniciarCheckOut(idEstadia)
+activate CCO
+
+CCO -> CP: 3. calcularTotal(idEstadia)
+activate CP
+CP -> BD: 4. SELECT * FROM pagos WHERE idEstadia=idEstadia
+activate BD
+BD --> CP: 5. pagosRealizados
+deactivate BD
+CP -> CP: 6. calcularTotalPagar()
+CP --> CCO: 7. total, pagos, saldo
+deactivate CP
+
+alt saldo > 0
+    CCO --> ICO: 8. error("Saldo pendiente")
+    deactivate CCO
+    
+    ICO --> R: 9. mostrarError()
+    note right: MSJ-01: "Saldo pendiente de S/. [monto]"
+    
+    ' === REDIRIGIR A PAGOS ===
+    ICO -> R: 10. redirigirAPagos()
+    deactivate ICO
+    
+    R -> CP: 11. registrarPago(idEstadia, monto, metodo)
+    activate CP
+    CP -> BD: 12. INSERT INTO pagos...
+    activate BD
+    BD --> CP: 13. ok
+    deactivate BD
+    CP -> BD: 14. UPDATE estadias SET totalPagado=...
+    activate BD
+    BD --> CP: 15. ok
+    deactivate BD
+    CP --> R: 16. exito
+    deactivate CP
+    note right: Pago registrado exitosamente
+    
+    ' === VOLVER AL CHECK-OUT ===
+    R -> ICO: 17. continuarCheckOut()
+    activate ICO
+    ICO -> CCO: 18. verificarSaldo(idEstadia)
+    activate CCO
+    CCO -> CP: 19. calcularSaldo(idEstadia)
+    activate CP
+    CP --> CCO: 20. saldo=0
+    deactivate CP
+    CCO --> ICO: 21. ok
+    deactivate CCO
+    
+    ' === CONTINUAR CON CHECK-OUT ===
+    note right: Continúa con el flujo normal de check-out
+    ' (Paso 12 del CU-09-check-out-exitoso)
+end
+
+deactivate R
+@enduml
