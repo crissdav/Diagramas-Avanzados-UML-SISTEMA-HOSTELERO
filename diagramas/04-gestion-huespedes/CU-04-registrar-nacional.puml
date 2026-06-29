@@ -3,8 +3,8 @@
 ' DIAGRAMA DE SECUENCIA: Registrar Huésped Nacional
 ' ============================================================
 ' CASO DE USO: CU-04 - Gestionar huéspedes
-' REQUISITOS FUNCIONALES: RF-03, RF-03.3, RF-03.4, RF-03.5
-' REGLAS DE NEGOCIO: RN-01, RN-02, RN-03, RN-04
+' REQUISITOS FUNCIONALES: RF-03 (Registrar Huésped Nacional)
+' REGLAS DE NEGOCIO: RN-01, RN-02, RN-03, RN-17
 ' ============================================================
 
 title Diagrama de Secuencia: CU-04 - Registrar Huésped Nacional
@@ -25,44 +25,46 @@ activate CH
 CH -> CH: 3. validarDNI(datos.dni)
 note right: Formato DNI: 8 dígitos
 
-CH -> CH: 4. validarEdad(fechaNacimiento)
-note right: RF-03.4: Mayor de 18 años
-
-alt edad >= 18
-    CH -> CH: 5. validarCamposMINCETUR(datos)
-    note right: RF-03.5: D.S.N.°005-2021-MINCETUR
+alt dniValido
+    CH -> CH: 4. validarCamposMINCETUR(datos)
+    note right: RF-03.4: D.S.N.°005-2021-MINCETUR
     
     alt camposCompletos
-        CH -> BD: 6. INSERT INTO huespedes (datos...)
+        CH -> BD: 5. INSERT INTO huespedes (datos...)
         activate BD
-        BD --> CH: 7. idHuesped
+        BD --> CH: 6. idHuesped
         deactivate BD
         
         alt menoresAcompanantes
-            CH -> CH: 8. validarMenores(menores)
+            CH -> CH: 7. validarMenores(menores)
             note right: RN-04: Registro de menores
             loop por cada menor
-                CH -> BD: 9. INSERT INTO menores (idHuesped, datos...)
+                CH -> BD: 8. INSERT INTO menores (idHuesped, datos...)
                 activate BD
-                BD --> CH: 10. ok
+                BD --> CH: 9. ok
                 deactivate BD
             end
         end
         
-        CH --> IH: 11. exito(idHuesped)
+        CH -> BD: 10. INSERT INTO auditoria (usuario, accion, detalle)
+        activate BD
+        BD --> CH: 11. ok
+        deactivate BD
+        
+        CH --> IH: 12. exito(idHuesped)
         deactivate CH
-        IH --> R: 12. confirmarRegistro()
+        IH --> R: 13. confirmarRegistro()
     else camposIncompletos
-        CH --> IH: 13. error("Campos MINCETUR incompletos")
+        CH --> IH: 14. error("Campos MINCETUR incompletos")
         deactivate CH
-        IH --> R: 14. mostrarError()
-        note right: MSJ-04: "Faltan campos obligatorios"
+        IH --> R: 15. mostrarError()
+        note right: MSJ-03: "Faltan campos obligatorios"
     end
-else edad < 18
-    CH --> IH: 15. error("Huésped menor de edad")
+else dniInvalido
+    CH --> IH: 16. error("DNI inválido")
     deactivate CH
-    IH --> R: 16. mostrarError()
-    note right: MSJ-01: "Debe ser mayor de 18 años"
+    IH --> R: 17. mostrarError()
+    note right: MSJ-01: "Documento no válido"
 end
 
 deactivate IH

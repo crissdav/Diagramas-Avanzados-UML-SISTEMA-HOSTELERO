@@ -48,6 +48,7 @@ diagramas-secuencia/
 │ └── CU-13-reporte-ingresos.puml
 └── 14-auditoria/ # Módulo de Auditoría
 └── CU-14-consultar-auditoria.puml
+
 ---
 
 ## 📊 Resumen de Diagramas
@@ -57,7 +58,7 @@ diagramas-secuencia/
 | **Autenticación** | CU-01 | 3 | RF-01, RF-01.1 |
 | **Habitaciones** | CU-02 | 3 | RF-02.1, RF-02.2, RF-02.3 |
 | **Disponibilidad** | CU-03 | 1 | RF-02, RF-07.5 |
-| **Huéspedes** | CU-04 | 2 | RF-03, RF-03.1, RF-03.3, RF-03.4, RF-03.5 |
+| **Huéspedes** | CU-04 | 2 | RF-03, RF-03.1, RF-03.3, RF-03.4 |
 | **Check-in** | CU-05 | 1 | RF-03.2, RF-04.6 |
 | **Reservas** | CU-06 | 5 | RF-04.1, RF-04.2, RF-04.3, RF-04.4, RF-04.5, RF-04.6 |
 | **Ampliación** | CU-07 | 2 | RF-05.1, RF-05.2, RF-05.3, RF-05.4, RF-05.5 |
@@ -118,8 +119,10 @@ diagramas-secuencia/
 | `CU-04-registrar-nacional.puml` | Registro con DNI y validación MINCETUR | Principal |
 | `CU-04-registrar-extranjero.puml` | Registro con pasaporte y datos adicionales | Principal |
 
-**RF Relacionados:** RF-03, RF-03.1, RF-03.3, RF-03.4, RF-03.5  
-**RN Aplicables:** RN-01, RN-02, RN-03, RN-04, RN-16
+**RF Relacionados:** RF-03, RF-03.1, RF-03.3, RF-03.4  
+**RN Aplicables:** RN-01, RN-02, RN-03, RN-04, RN-16, RN-17
+
+**Nota:** La validación de mayoría de edad (RF-03.4 anterior) ha sido eliminada. Ahora RF-03.4 corresponde únicamente a "Validar Campos Obligatorios MINCETUR".
 
 ---
 
@@ -130,7 +133,9 @@ diagramas-secuencia/
 | `CU-05-check-in-completo.puml` | Registro completo de ingreso de huésped | Principal |
 
 **RF Relacionados:** RF-03.2, RF-04.6  
-**RN Aplicables:** RN-01, RN-06, RN-12, RN-13, RN-14
+**RN Aplicables:** RN-01, RN-02, RN-03, RN-04, RN-06, RN-12, RN-13, RN-14, RN-16, RN-17
+
+**Nota:** La validación de mayoría de edad ha sido eliminada del flujo de check-in.
 
 ---
 
@@ -245,10 +250,10 @@ Para visualizar y editar los diagramas, necesitas:
 
 | Herramienta | Versión | Enlace |
 |-------------|---------|--------|
-| **Visual Studio Code** | v1.80+ | [Descargar](https://code.visualstudio.com/) |
-| **Extensión PlantUML** | v2.17+ | [Instalar](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml) |
-| **Java (JRE)** | v11+ | [Descargar](https://adoptium.net/) |
-| **Graphviz** | v9.0+ | [Descargar](https://graphviz.org/download/) |
+| **Visual Studio Code** | v1.80+ | https://code.visualstudio.com/ |
+| **Extensión PlantUML** | v2.17+ | https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml |
+| **Java (JRE)** | v11+ | https://adoptium.net/ |
+| **Graphviz** | v9.0+ | https://graphviz.org/download/ |
 
 ### 📌 Configuración del Entorno
 

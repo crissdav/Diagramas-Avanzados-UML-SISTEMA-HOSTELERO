@@ -2,9 +2,9 @@
 ' ============================================================
 ' DIAGRAMA DE SECUENCIA: Check-in Completo
 ' ============================================================
-' CASO DE USO: CU-05 - Realizar check-in
+' CASO DE USUARIO: CU-05 - Realizar check-in
 ' REQUISITOS FUNCIONALES: RF-03.2, RF-04.6
-' REGLAS DE NEGOCIO: RN-01, RN-06, RN-12, RN-13, RN-14
+' REGLAS DE NEGOCIO: RN-01, RN-02, RN-03, RN-04, RN-06, RN-12, RN-13, RN-14, RN-16, RN-17
 ' ============================================================
 
 title Diagrama de Secuencia: CU-05 - Check-in Completo
@@ -37,65 +37,110 @@ CHU --> CCI: 6. huesped
 deactivate CHU
 
 alt Huésped no existe
+    ' === REGISTRAR NUEVO HUÉSPED ===
     CCI -> CHU: 7. registrarNuevoHuesped(datos)
     activate CHU
-    CHU -> CHU: 8. validarEdad()
-    CHU -> CHU: 9. validarMINCETUR()
-    CHU -> BD: 10. INSERT INTO huespedes...
-    activate BD
-    BD --> CHU: 11. idHuesped
-    deactivate BD
-    CHU --> CCI: 12. idHuesped
+    
+    CHU -> CHU: 8. validarDocumento()
+    note right: RF-03: DNI o RF-03.1: Pasaporte
+    
+    alt documentoValido
+        CHU -> CHU: 9. validarCamposMINCETUR()
+        note right: RF-03.4: D.S.N.°005-2021-MINCETUR
+        
+        alt camposCompletos
+            CHU -> BD: 10. INSERT INTO huespedes...
+            activate BD
+            BD --> CHU: 11. idHuesped
+            deactivate BD
+            
+            alt menoresAcompanantes
+                CHU -> CHU: 12. validarMenores(menores)
+                note right: RN-04: Registro de menores
+                loop por cada menor
+                    CHU -> BD: 13. INSERT INTO menores...
+                    activate BD
+                    BD --> CHU: 14. ok
+                    deactivate BD
+                end
+            end
+            
+            CHU --> CCI: 15. idHuesped
+        else camposIncompletos
+            CHU --> CCI: 16. error("Campos MINCETUR incompletos")
+            deactivate CHU
+            CCI --> ICI: 17. error()
+            ICI --> R: 18. mostrarError()
+            note right: MSJ-03: "Faltan campos obligatorios"
+        end
+    else documentoInvalido
+        CHU --> CCI: 19. error("Documento inválido")
+        deactivate CHU
+        CCI --> ICI: 20. error()
+        ICI --> R: 21. mostrarError()
+        note right: MSJ-01: "Documento no válido"
+    end
     deactivate CHU
 end
 
 ' === 3. OBTENER HABITACIONES DISPONIBLES ===
-CCI -> CH: 13. obtenerDisponibles(tipo, capacidad)
+CCI -> CH: 22. obtenerDisponibles(tipo, capacidad)
 activate CH
-CH -> BD: 14. SELECT * FROM habitaciones WHERE estado='Disponible'
+CH -> BD: 23. SELECT * FROM habitaciones WHERE estado='Disponible'
 activate BD
-BD --> CH: 15. listaHabitaciones
+BD --> CH: 24. listaHabitaciones
 deactivate BD
-CH --> CCI: 16. habitaciones
+CH --> CCI: 25. habitaciones
 deactivate CH
 
-' === 4. REGISTRAR ESTADÍA ===
-CCI -> BD: 17. INSERT INTO estadias (idHuesped, idHabitacion, fechaIngreso, fechaSalidaProbable, motivoViaje)
+' === 4. REGISTRAR DATOS DE HOSPEDAJE ===
+CCI -> BD: 26. INSERT INTO estadias (idHuesped, idHabitacion, fechaIngreso, fechaSalidaProbable, motivoViaje)
 activate BD
-BD --> CCI: 18. idEstadia
+BD --> CCI: 27. idEstadia
 deactivate BD
+note right: RF-03.2: Registrar datos de hospedaje
 
 ' === 5. CAMBIAR ESTADO DE HABITACIÓN ===
-CCI -> CH: 19. cambiarEstado(idHabitacion, "Ocupada")
+CCI -> CH: 28. cambiarEstado(idHabitacion, "Ocupada")
 activate CH
-CH -> BD: 20. UPDATE habitaciones SET estado='Ocupada'
+CH -> BD: 29. UPDATE habitaciones SET estado='Ocupada'
 activate BD
-BD --> CH: 21. ok
+BD --> CH: 30. ok
 deactivate BD
-CH --> CCI: 22. actualizado
+CH --> CCI: 31. actualizado
 deactivate CH
 
 ' === 6. REGISTRAR PAGO ===
-CCI -> CP: 23. registrarPago(idEstadia, monto, metodo)
+CCI -> CP: 32. registrarPago(idEstadia, monto, metodo)
 activate CP
-CP -> BD: 24. INSERT INTO pagos (idEstadia, monto, metodo, fecha)
-activate BD
-BD --> CP: 25. idPago
-deactivate BD
-CP --> CCI: 26. exito
-deactivate CP
+
+alt montoValido
+    CP -> BD: 33. INSERT INTO pagos (idEstadia, monto, metodo, fecha)
+    activate BD
+    BD --> CP: 34. idPago
+    deactivate BD
+    CP --> CCI: 35. exito
+    deactivate CP
+else montoInsuficiente
+    CP --> CCI: 36. error("Monto insuficiente")
+    deactivate CP
+    CCI --> ICI: 37. error()
+    ICI --> R: 38. mostrarError()
+    note right: MSJ-04: "Monto insuficiente"
+end
 
 ' === 7. AUDITORÍA ===
-CCI -> BD: 27. INSERT INTO auditoria (usuario, accion, detalle)
+CCI -> BD: 39. INSERT INTO auditoria (usuario, accion, detalle)
 activate BD
-BD --> CCI: 28. ok
+BD --> CCI: 40. ok
 deactivate BD
 
-CCI --> ICI: 29. exito(idEstadia, idHuesped)
+CCI --> ICI: 41. exito(idEstadia, idHuesped)
 deactivate CCI
 
-ICI --> R: 30. mostrarConfirmacion()
-deactivate ICI
+ICI --> R: 42. mostrarConfirmacion()
+note right: Check-in completado exitosamente
 
+deactivate ICI
 deactivate R
 @enduml

@@ -3,8 +3,8 @@
 ' DIAGRAMA DE SECUENCIA: Registrar Huésped Extranjero
 ' ============================================================
 ' CASO DE USO: CU-04 - Gestionar huéspedes
-' REQUISITOS FUNCIONALES: RF-03.1, RF-03.4, RF-03.5
-' REGLAS DE NEGOCIO: RN-02, RN-16
+' REQUISITOS FUNCIONALES: RF-03.1 (Registrar Huésped Extranjero)
+' REGLAS DE NEGOCIO: RN-02, RN-16, RN-17
 ' ============================================================
 
 title Diagrama de Secuencia: CU-04 - Registrar Huésped Extranjero
@@ -26,39 +26,45 @@ CH -> CH: 3. validarPasaporte(datos.pasaporte)
 note right: RF-03.1: Validar pasaporte\n- Número\n- País de origen\n- Fecha de expiración
 
 alt pasaporteValido
-    CH -> CH: 4. validarEdad(fechaNacimiento)
-    note right: RF-03.4: Mayor de 18 años
+    CH -> CH: 4. validarCamposMINCETUR(datos)
+    note right: RF-03.4: D.S.N.°005-2021-MINCETUR
     
-    alt edad >= 18
-        CH -> CH: 5. validarCamposMINCETUR(datos)
-        note right: RF-03.5: D.S.N.°005-2021-MINCETUR
+    alt camposCompletos
+        CH -> BD: 5. INSERT INTO huespedes (datos...)
+        activate BD
+        BD --> CH: 6. idHuesped
+        deactivate BD
         
-        alt camposCompletos
-            CH -> BD: 6. INSERT INTO huespedes (datos...)
-            activate BD
-            BD --> CH: 7. idHuesped
-            deactivate BD
-            
-            CH --> IH: 8. exito(idHuesped)
-            deactivate CH
-            IH --> R: 9. confirmarRegistro()
-        else camposIncompletos
-            CH --> IH: 10. error("Campos MINCETUR incompletos")
-            deactivate CH
-            IH --> R: 11. mostrarError()
-            note right: MSJ-04: "Faltan campos obligatorios"
+        alt menoresAcompanantes
+            CH -> CH: 7. validarMenores(menores)
+            note right: RN-04: Registro de menores
+            loop por cada menor
+                CH -> BD: 8. INSERT INTO menores (idHuesped, datos...)
+                activate BD
+                BD --> CH: 9. ok
+                deactivate BD
+            end
         end
-    else edad < 18
-        CH --> IH: 12. error("Huésped menor de edad")
+        
+        CH -> BD: 10. INSERT INTO auditoria (usuario, accion, detalle)
+        activate BD
+        BD --> CH: 11. ok
+        deactivate BD
+        
+        CH --> IH: 12. exito(idHuesped)
         deactivate CH
-        IH --> R: 13. mostrarError()
-        note right: MSJ-01: "Debe ser mayor de 18 años"
+        IH --> R: 13. confirmarRegistro()
+    else camposIncompletos
+        CH --> IH: 14. error("Campos MINCETUR incompletos")
+        deactivate CH
+        IH --> R: 15. mostrarError()
+        note right: MSJ-03: "Faltan campos obligatorios"
     end
 else pasaporteInvalido
-    CH --> IH: 14. error("Pasaporte inválido")
+    CH --> IH: 16. error("Pasaporte inválido")
     deactivate CH
-    IH --> R: 15. mostrarError()
-    note right: MSJ-06: "Pasaporte no válido"
+    IH --> R: 17. mostrarError()
+    note right: MSJ-02: "Pasaporte no válido"
 end
 
 deactivate IH
